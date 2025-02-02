@@ -1,5 +1,17 @@
 #!/opt/homebrew/bin/bash
 
+function debug {
+    local MESSAGE="$@"
+    local -a LINES
+    IFS=$'\n' read -d "" -ra LINES <<< "$MESSAGE"
+    
+    if [[ -n "$DEBUG_LISP_DOT_BASH" ]]; then
+        for LINE in "${LINES[@]}"; do
+            echo "[debug] $LINE" >/dev/stderr
+        done
+    fi
+}
+
 function main {
     if [[ $# -ne 1 ]]; then
         echo "Wrong number of arguments. Usage: lisp.bash 'lisp code'" \
@@ -8,50 +20,35 @@ function main {
     fi
 
     local LISP_CODE="$1"
-    lx "$LISP_CODE"
-    
-    # TOKENS="$(lx "$LISP_CODE")"
-    # echo "$TOKENS"
-    
-    # or maybe...
-    
-    # function parse {
-    #     local EXPR="$1"
-    #     local IFS=' ()'
-    #     local -a TOKES
-    #     read -ra TOKES <<< "$EXPR"
-    # }
-
-    # while true; do
-    #     TOKEN_REST="$(pop "$EXPR")"
-    #     OUTPUT=$(evl 
-    #     read -a TOKEN <<< "$TOKENS"
+    local TOKENS="$(lx "$LISP_CODE")"
+#   debug "function lx returned
+#$TOKENS"
 }
 
 function lx {
     local CODE="$1"
-    local -a TOKENS
-    read -ra TOKENS <<< "$CODE"
     
-    # Pad parens with spaces so that they'll be treated as separate tokens...
+    debug "Lisp code:
+<$CODE>"
+    
+    # Pad parens with spaces, so they'll be treated as separate tokens.
     for CHAR in '(' \
                 ')'
     do
         CODE="${CODE//${CHAR}/ ${CHAR} }"
     done
-    
-    # Read whitespace-separated tokens into an array
-        
-    
-    # CODE="${CODE//^${SEP}/}"
-    # CODE="${CODE//${SEP}$/}" 
-    
+    debug "Code with parens space-padded:
+<$CODE>"
 
-
+    # Turn each chunk of 1 or more whitespace chars into a single ' '.
+    # It's a hack, but Bash doesn't do regex substitution, so we need it.
+    read -ra TEMPARR <<< "$CODE"
+    CODE="${TEMPARR[*]}"
+    debug "Code with whitespace normalized:
+<$CODE>"
 
     # Define an output token separator that won't be used in the
-    # input Lisp.
-    
+    # input Lisp.    
     # ASCII has a chacter for just such a purpose:
     # local SEP=$'\x1F'
     # But it's not printable, which makes print-style debugging hard.
@@ -59,14 +56,19 @@ function lx {
     # local SEP=$'\n'
     local SEP='|'
     
-    # Replace each sequence of whitespace(s) with the separator char.
-    CODE="${CODE//+[[:space:]]/${SEP}}"
-    
-    # # B
-    
-    No, I want it to replace each sequence of whitespace chars with a 
+    # Replace each resulting space with the separator character.
+    CODE="${CODE// /${SEP}}"
 
-    printf "$CODE"
+    local CHAR_DESC=""
+    if [[ "$SEP" = $'\x1F' ]]; then
+        CHAR_DESC="the ASCII data separator character (hex 1F, unprintable"
+    else
+        CHAR_DESC="char '$SEP'"
+    fi
+    debug "Tokens separated by $CHAR_DESC:
+$CODE"
+
+    echo "$CODE"
 }
 
 main "$@"
