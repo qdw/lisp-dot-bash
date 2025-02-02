@@ -13,10 +13,8 @@ function debug {
     ### echo "Stack depth of caller: $STACK_DEPTH_OF_CALLER" >/dev/stderr
     if [[ $DBGLVL -ge $STACK_DEPTH_OF_CALLER ]]; then
         ### echo "Debug level $DBGLVL >= $STACK_DEPTH_OF_CALLER (caller's stack depth), so print the debug message" >/dev/stderr
-        local -a LINES
-        IFS=$'\n' read -d "" -ra LINES <<< "$@"
-        ### echo "message: '${LINES[*]}'" >/dev/stderr
-        for LINE in "${LINES[@]}"; do
+        ### echo "message: '${@[*]}'" >/dev/stderr
+        for LINE in "$@"; do
             echo "[debug] $CALLER: $LINE" >/dev/stderr
         done
         echo >/dev/stderr
@@ -34,19 +32,22 @@ function main {
     fi
 
     local LISP_CODE="$1"
-    debug "Lisp code:
-$LISP_CODE"
+    debug "Lisp code:" \
+          "$LISP_CODE"
     
     local TOKENS="$(lx "$LISP_CODE")"
-    debug "The lexer returned the following token-string:
-$TOKENS"
+    debug "The lexer returned the following token-string:" \
+          "$TOKENS"
+
+    debug "Parsing..."
+    parse <<< "$TOKENS"
 }
 
 function lx {
     local CODE="$1"
     
-    debug "Lisp code:
-<$CODE>"
+    debug "Lisp code:" \
+          "$CODE"
     
     # Pad parens with spaces, so they'll be treated as separate tokens.
     for CHAR in '(' \
@@ -54,15 +55,15 @@ function lx {
     do
         CODE="${CODE//${CHAR}/ ${CHAR} }"
     done
-    debug "Code with parens space-padded:
-<$CODE>"
+    debug "Code with parens space-padded:" \
+          "$CODE"
 
     # Turn each chunk of 1 or more whitespace chars into a single ' '.
     # It's a hack, but Bash doesn't do regex substitution, so we need it.
     read -ra TEMPARR <<< "$CODE"
     CODE="${TEMPARR[*]}"
-    debug "Code with whitespace normalized:
-<$CODE>"
+    debug "Code with whitespace normalized:" \
+          "$CODE"
 
     # Define an output token separator that won't be used in the
     # input Lisp.    
