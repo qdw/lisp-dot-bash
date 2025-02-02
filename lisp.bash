@@ -90,4 +90,36 @@ $CODE"
 }
 
 
+function parse {
+    local -A ENV
+    
+    local INDENT_LEVEL=0
+    function indent {
+        for ((i=0; i<INDENT_LEVEL; i++)); do
+            # Indent two spaces 'cause it's Lisp
+            printf "  "
+        done
+    }
+    
+    function print_token {
+        indent
+        echo "$TOKEN"
+    }
+    
+    local TOKEN
+    while read -r TOKEN; do
+        if [[ "$TOKEN" = "(" ]]; then
+            print_token
+            INDENT_LEVEL=$(( $INDENT_LEVEL + 1 ))
+        elif [[ "$TOKEN" = ")" ]]; then
+            INDENT_LEVEL=$(( $INDENT_LEVEL - 1 ))
+            print_token
+        else
+            print_token
+        fi
+    done
+}
+
+
+
 main "$@"
