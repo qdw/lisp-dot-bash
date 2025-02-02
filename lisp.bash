@@ -48,8 +48,9 @@ function main {
     debug "The lexer returned the following token-string:" \
           "$TOKENS"
 
-    debug "Parsing..."
-    parse <<< "$TOKENS"
+    PARSER_OUTPUT="$(parse <<< "$TOKENS")"
+    debug "The parser returned the following (string) pseudo-AST" \
+          "$PARSER_OUTPUT"
 }
 
 function lx {
@@ -78,13 +79,17 @@ function lx {
     CODE="${CODE// /${SEP}}"
 
     local CHAR_DESC=""
-    if [[ "$SEP" = $'\x1F' ]]; then
-        CHAR_DESC="the ASCII data separator character (hex 1F, unprintable"
+    if [[ "$SEP" = $'\n' ]]; then
+        CHAR_DESC="newlines"
+    elif [[ "$SEP" = $'\x1F' ]]; then
+        CHAR_DESC="the ASCII data separator control char (hex 1F, unprintable)"
     else
-        CHAR_DESC="char '$SEP'"
+        CHAR_DESC="'$SEP'"
     fi
-    debug "Tokens separated by $CHAR_DESC:
-$CODE"
+    debug "Tokens separated by $CHAR_DESC:" \
+          " " \
+          "$CODE"
+
 
     echo "$CODE"
 }
