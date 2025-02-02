@@ -1,14 +1,28 @@
 #!/opt/homebrew/bin/bash
 
 function debug {
-    local MESSAGE="$@"
-    local -a LINES
-    IFS=$'\n' read -d "" -ra LINES <<< "$MESSAGE"
-    
-    if [[ -n "$DEBUG_LISP_DOT_BASH" ]]; then
+    local DBGLVL="${DEBUG_LEVEL_FOR_LISP_DOT_BASH:-0}"
+    ### echo "Debug level: $DBGLVL" >/dev/stderr
+    if [[ $DBGLVL = 0 ]]; then
+        return
+    fi
+
+    local CALLER="${FUNCNAME[1]}"
+    ### echo "Caller: $CALLER" >/dev/stderr
+    local STACK_DEPTH_OF_CALLER=$(( ${#FUNCNAME[@]} - 2 ))
+    ### echo "Stack depth of caller: $STACK_DEPTH_OF_CALLER" >/dev/stderr
+    if [[ $DBGLVL -ge $STACK_DEPTH_OF_CALLER ]]; then
+        ### echo "Debug level $DBGLVL >= $STACK_DEPTH_OF_CALLER (caller's stack depth), so print the debug message" >/dev/stderr
+        local -a LINES
+        IFS=$'\n' read -d "" -ra LINES <<< "$@"
+        ### echo "message: '${LINES[*]}'" >/dev/stderr
         for LINE in "${LINES[@]}"; do
-            echo "[debug] $LINE" >/dev/stderr
+            echo "[debug] $CALLER: $LINE" >/dev/stderr
         done
+        echo >/dev/stderr
+    else
+        :
+        ## echo "$DBGLVL < $STACK_DEPTH_OF_CALLER (caller's stack depth), so don't print the debug message" >/dev/stderr
     fi
 }
 
@@ -20,9 +34,12 @@ function main {
     fi
 
     local LISP_CODE="$1"
+    debug "Lisp code:
+$LISP_CODE"
+    
     local TOKENS="$(lx "$LISP_CODE")"
-#   debug "function lx returned
-#$TOKENS"
+    debug "The lexer returned the following token-string:
+$TOKENS"
 }
 
 function lx {
@@ -70,5 +87,7 @@ $CODE"
 
     echo "$CODE"
 }
+
+
 
 main "$@"
