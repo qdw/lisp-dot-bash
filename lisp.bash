@@ -1,5 +1,14 @@
 #!/opt/homebrew/bin/bash
 
+# Define an output token separator that won't be used in the
+# input Lisp.    
+# ASCII has a chacter for just such a purpose:
+# local SEP=$'\x1F'
+# But it's not printable, which makes print-style debugging hard.
+# So just use newline. That way we don't have to change IFS, either.
+SEP=$'\n'    
+
+
 function debug {
     local DBGLVL="${DEBUG_LEVEL_FOR_LISP_DOT_BASH:-0}"
     ### echo "Debug level: $DBGLVL" >/dev/stderr
@@ -65,15 +74,6 @@ function lx {
     debug "Code with whitespace normalized:" \
           "$CODE"
 
-    # Define an output token separator that won't be used in the
-    # input Lisp.    
-    # ASCII has a chacter for just such a purpose:
-    # local SEP=$'\x1F'
-    # But it's not printable, which makes print-style debugging hard.
-    # So just use newline.
-    # local SEP=$'\n'
-    local SEP='|'
-    
     # Replace each resulting space with the separator character.
     CODE="${CODE// /${SEP}}"
 
@@ -87,6 +87,37 @@ function lx {
 $CODE"
 
     echo "$CODE"
+}
+
+
+function parse {
+    local -A ENV
+    
+    local INDENT_LEVEL=0
+    function indent {
+        for ((i=0; i<INDENT_LEVEL; i++)); do
+            # Indent two spaces 'cause it's Lisp
+            printf "  "
+        done
+    }
+    
+    function print_token {
+        indent
+        echo "$TOKEN"
+    }
+    
+    local TOKEN
+    while read -r TOKEN; do
+        if [[ "$TOKEN" = "(" ]]; then
+            print_token
+            INDENT_LEVEL=$(( $INDENT_LEVEL + 1 ))
+        elif [[ "$TOKEN" = ")" ]]; then
+            INDENT_LEVEL=$(( $INDENT_LEVEL - 1 ))
+            print_token
+        else
+            print_token
+        fi
+    done
 }
 
 
