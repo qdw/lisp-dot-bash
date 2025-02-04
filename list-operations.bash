@@ -23,7 +23,28 @@ function list {
     echo "$@"
 }
 
-function car {
+# function scalist {
+#     local SCALIST
+#     SCALIST[0]="a"
+#     SCALIST[1]="b"
+#     for ((i=0; i<${#SCALIST[@]}; i++)); do
+#         debug "scalist elem $i:" ${SCALIST[i]}
+#     done
+#     debug "${SCALIST[*]}"
+#     echo "${SCALIST[*]}"
+# }
+
+# function scalist-caller {
+#     local -a LS=("$(scalist)")
+#     debug "scalist returned $LS"
+    
+#     # for ((i=0; i<${#LS[@]}; i++)); do
+#     for ELEM in ${LS[@]}; do
+#         echo "'$ELEM'"
+#     done
+# }
+
+function debug-car {
     local -a LIST=("$@")
     debug "input: " ${LIST[@]}
     local RETVAL="${LIST[0]}"
@@ -31,12 +52,32 @@ function car {
     echo "$RETVAL"
 }
 
-function cdr {
+function car {
+    local -a LIST=("$@")
+    echo "${LIST[0]}"
+}
+
+function alt-car {
+    echo "$1"
+}
+
+function debug-cdr {
     local -a LIST=("$@")
     debug "input: ${LIST[@]}"
     local LENGTH=${#LIST[@]}
     debug "length: $LENGTH"
     echo ${LIST[@]:1:LENGTH}
+}
+
+function cdr {
+    local -a LIST=("$@")
+    local LENGTH=${#LIST[@]}
+    echo ${LIST[@]:1:LENGTH}
+}
+
+function alt-cdr {
+    shift
+    echo "$@"
 }
     
 # I can't figure out how to implement pop in Bash
@@ -66,6 +107,10 @@ function last-elem-of {
     echo "${LIST[-1]}"
 }
 
+function alt-last-elem-of {
+    echo ${!#}
+}
+
 function list-sans-last-elem {
     local -a LIST=("$@")
     local LENGTH=${#LIST[@]}
@@ -83,6 +128,15 @@ function _pop {
     printf "${LAST}${OFS}${REST}"
 }
 
+function _alt_pop {
+    local -a LIST=("$@")
+    local LAST_ELEM="${LIST[-1]}"
+    unset LIST[-1]
+    
+    OFS=$'\x1F'
+    printf "${LAST_ELEM}${OFS}${LIST[*]}"
+}
+
 function run-unit-tests {
     #### Fixtures
     
@@ -91,24 +145,33 @@ function run-unit-tests {
     
     #### Working tests
 
-    debug "Literal flat list:" ${FLAT_LIST[@]}
+    debug "literal flat list:" ${FLAT_LIST[@]}
     
-    debug "Constructed flat list:" ${CONSTRUCTED_FLAT_LIST[@]}
+    debug "constructed flat list:" ${CONSTRUCTED_FLAT_LIST[@]}
     
     local LEN=$(length ${FLAT_LIST[@]})
-    debug "List length: $LEN"
+    debug "list length: $LEN"
 
     local CAR="$(car ${FLAT_LIST[@]})"
     debug "car: $CAR"
     
-    local -a CDR=($(cdr ${FLAT_LIST[@]}))
-    debug "cdr: ${CDR[@]}"
+    local ALT_CAR="$(alt-car ${FLAT_LIST[@]})"
+    debug "alt-car: $CAR"
+    
+    local -a CDR="$(cdr ${FLAT_LIST[@]})"
+    debug "cdr: $CDR"
+    
+    local -a ALT_CDR="$(alt-cdr ${FLAT_LIST[@]})"
+    debug "alt-cdr: ${ALT_CDR[@]}"
     
     local LAST_ELEM="$(last-elem-of ${FLAT_LIST[@]})"
-    debug "Last element of the literal list: $LAST_ELEM"
+    debug "last element: $LAST_ELEM"
+    
+    local ALT_LAST_ELEM="$(alt-last-elem-of ${FLAT_LIST[@]})"
+    debug "alt last element: $ALT_LAST_ELEM"
 
     local -a TRUNCATED_LIST=$(list-sans-last-elem ${FLAT_LIST[@]})
-    debug "List after removing last element: ${TRUNCATED_LIST[@]}"
+    debug "list after removing last element: ${TRUNCATED_LIST[@]}"
 
     function pop {
         local LIST_NAME="$1"
@@ -118,8 +181,19 @@ function run-unit-tests {
     }
 
     pop FLAT_LIST  POPPED_ELEM  POPPED_LIST
-    debug "POPPED_ELEM: $POPPED_ELEM"
-    debug "POPPED_LIST: $POPPED_LIST"
+    debug "popped last element: $POPPED_ELEM"
+    debug "list after popping: $POPPED_LIST"
+    
+    function alt_pop {
+        local LIST_NAME="$1"
+        local ELEM_NAME="$2"
+        local NEW_LIST_NAME="$3"
+        eval "IFS=$'\x1F' read -r $ELEM_NAME $NEW_LIST_NAME <<< \"\$(_alt_pop \${$LIST_NAME[@]})\""
+    }
+
+    alt_pop FLAT_LIST  ALT_POPPED_ELEM  ALT_POPPED_LIST
+    debug "alt-popped last element: $ALT_POPPED_ELEM"
+    debug "list after alt-popping: $ALT_POPPED_LIST"
 }
 
 # Run the main function only if this script was executed directly;
