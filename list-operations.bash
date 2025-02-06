@@ -30,6 +30,14 @@ function gt {
     fi
 }
 
+function broken-lt {
+    if [[ "$1" -gt "$2" ]]; then
+        echo "'t"
+    else
+        echo "nil"
+    fi
+}
+
 function apply {
     local FUNC="$1"
     shift
@@ -135,7 +143,7 @@ function _pop {
 }
 
 function run-unit-tests {
-    plan 10
+    plan 14
 
     #### Fixtures
     
@@ -215,10 +223,24 @@ function run-unit-tests {
     debug "abs -98.6 -> $ABS_NEG" # 98.6
     is  "$ABS_NEG"  "98.6"  "op 'abs' with negative arg"
     
-    GT31="$(gt 3 1)"
+    local LT12="$(broken-lt 1 2)"
+    is "$LT12"  "'t"  "lt 1 2 -> 't"
+
+    if [[ ! "$LT12" = "'t" ]]; then
+        skip 2 "lt is broken, so skip its remaining tests"
+    else
+        local LT21="$(broken-lt 2 1)"
+        is "$LT21" "nil"  "lt 2 1 -> nil"
+
+        local LT22="$(broken-lt 2 2)"
+        is "LT22" "nil"  "lt 2 2 -> nil"
+    fi
+    
+    
+    local GT31="$(gt 3 1)"
     is "$GT31"  "'t"  "gt 3 1 -> 't"
 
-    GT12="$(gt  1 2)"
+    local GT12="$(gt  1 2)"
     is "$GT12"  "nil"  "gt 1 2 -> nil"
     
     end

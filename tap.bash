@@ -5,7 +5,35 @@ FAILS=0
 WINS=0
         
 TEST_NUMBER=1
-        
+
+function tap_bail {
+    local REASON="$2"
+    if [[ "$REASON" ]]; then
+        REASON=" $REASON"
+        techo "Bail out!${REASON}"
+        return 1
+    fi
+}
+
+function skip {
+    local N="$1"
+    local REASON="$2"
+    if [[ "$REASON" ]]; then
+        REASON=" $REASON"
+    fi
+    
+    local LAST="$(($TEST_NUMBER + N))"
+    while true; do
+        if [[ "$TEST_NUMBER" -gt "$LAST" ]]; then
+            return
+        else
+            techo "ok $TEST_NUMBER - # SKIP${REASON}"
+            ((WINS+=1))
+            ((TEST_NUMBER+=1))
+        fi
+    done
+}   
+
 function techo {
     echo "$@" >/dev/stderr
 }
@@ -47,7 +75,7 @@ function is {
     else
         OKNOTOK="not ok"
         ((FAILS += 1))
-        DIAG=" (got '$GOT', expected '$EXPECTED')"
+        DIAG=" (got $GOT, expected $EXPECTED)"
     fi
       
     techo "$OKNOTOK ${TEST_NUMBER}${DESC}${DIAG}"
