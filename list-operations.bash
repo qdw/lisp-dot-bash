@@ -2,6 +2,32 @@
 
 DEBUG_LEVEL="$DEBUG_LEVEL_FOR_LISP_DOT_BASH"
 
+function arith {
+    set -x
+    
+    local OP="$1"
+    shift
+ 
+    local ACC="$1"
+    shift
+    for ARG in "$@"; do
+        ((ACC=ACC "$OP" ARG))
+    done
+    echo "$ACC"
+    
+    set -x
+}
+
+function div {
+    local ACC="$1"
+    shift
+    debug "ACC: $ACC, rest: $@"
+    for ARG in "$@"; do
+        ((ACC = ACC / $ARG))
+    done
+    echo "$ACC"
+}
+
 function add {
     local ACC=0
     for ARG in "$@"; do
@@ -239,9 +265,18 @@ function run-unit-tests {
     ARRSUM=$(add ${ARR[@]})
     debug "add with array arg -> $ARRSUM"
     
-    APSUM="$(apply add 1 2 3 4)"
+    local APSUM="$(apply add 1 2 3 4)"
     debug "apply add 1 2 3 4 -> $APSUM"
-}    
+    
+    local DIVIDEND=$(div 64 2 2 4)
+    debug "div 64 2 2 4 -> $DIVIDEND"
+    
+    local ABSTRACTED_DIVIDEND="$(arith '/' 64 2 2 4)"
+    debug "arith '/' 64 2 2 4 -> $ABSTRACTED_DIVIDEND"
+    
+    local ABSTRACTED_SUM="$(arith '+' 1 2 3 4)"
+    debug "arith '+' 1 2 3 4 -> $ABSTRACTED_SUM"
+}
 
 
 
