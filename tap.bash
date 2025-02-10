@@ -92,12 +92,22 @@ function plan {
 }
 
 function end {
+    function inflect-test {
+        local NUMBER="$1"
+        if [[ $NUMBER -eq 1 ]]; then
+            echo "test"
+        else
+            echo "tests"
+        fi
+    }
+            
+
     local TOTAL="$((FAILS + WINS))"
     if [[ "$TOTAL" -ne "$PLANNED" ]]; then
-        techo "warning: planned $PLANNED tests but ran $TOTAL"
+        techo "Looks like you planned $PLANNED tests but ran $TOTAL."
         return 1
     elif [[ "$FAILS" -gt 0 ]]; then
-        techo "$WINS/$PLANNED tests failed"
+        techo "Looks like you failed $FAILS $(inflect-test "$TOTAL") of $TOTAL run."
         return 1
     else
         techo "all tests succeeded"
